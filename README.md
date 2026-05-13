@@ -1,97 +1,59 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# MarkerDetectorApp 📸
 
-# Getting Started
+A high-performance React Native Android application built to detect, extract, and process custom visual markers from a live camera feed. 
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+The primary goal of this application is to capture high-resolution imagery (2000x2000px+) and perform perspective correction and extraction using native OpenCV within a strict **<3000ms** latency threshold.
 
-## Step 1: Start Metro
+## 🚀 Development Strategy & Phases
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+To ensure maximum stability and performance, the development of this application is broken down into structured phases. We are prioritizing a "Fastest Path" approach: offloading heavy image processing entirely to Native Android (Kotlin + OpenCV) rather than doing it in JavaScript.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### ✅ Phase 1: Camera Setup & Capture Loop (Completed)
+- **Framework Setup**: Initialized the React Native Android environment (`v0.85.3`).
+- **Camera Integration**: Integrated `react-native-vision-camera`. 
+  - *Note on Architecture*: We intentionally downgraded to the highly stable `v4.6.0` release and disabled C++ `Frame Processors` in `gradle.properties`. This completely bypasses severe Windows CMake/Ninja compiler loops associated with the bleeding-edge v5 "Nitro" modules, ensuring a rock-solid Windows development environment.
+- **Capture Loop**: Engineered a background `setInterval` loop that silently captures a high-resolution frame from the camera every 1000ms and logs the temporary disk path (latency: ~300-400ms).
 
-```sh
-# Using npm
-npm start
+### 🚧 Phase 2: Native OpenCV Extraction (Upcoming)
+- **Native Module Setup**: Create a Custom Kotlin module bridging React Native and OpenCV.
+- **Contour Detection**: Convert frames to grayscale, apply Gaussian blur, and use Canny edge detection to find the 4-point quadrilateral marker.
+- **Perspective Warp**: Flatten and warp the distorted marker into a perfect 2D square.
+- **Orientation Check**: Detect the prominent black square in the top-left corner to ensure the marker is upright.
 
-# OR using Yarn
-yarn start
+---
+
+## 🛠️ Setup Instructions
+
+Follow these steps to run the project locally if you have just pulled it from GitHub:
+
+### Prerequisites
+- Node.js (v18+)
+- Android Studio with Android SDK 34+
+- A running Android Emulator (or a physical Android device connected via USB)
+
+### 1. Install Dependencies
+```bash
+npm install
 ```
 
-## Step 2: Build and run your app
+### 2. Start the Metro Bundler
+In your terminal, start the React Native development server:
+```bash
+npx react-native start
+```
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+### 3. Build & Run the App
+Open a *second* terminal window in the project root and run:
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+### 💡 Troubleshooting
+If you encounter `EADDRINUSE` or the app hangs with an "App isn't responding" (ANR) error on the emulator, it means a background process is locking the port or files. 
+1. Stop the Metro server (`Ctrl + C`).
+2. Run `.\android\gradlew --stop` to kill the background Java daemon.
+3. If necessary, kill background Node processes: `Stop-Process -Name "node" -Force` (Powershell) or `killall node` (Mac/Linux).
+4. Run `npm run android` again.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+---
+*Built as part of an Engineering Internship Assignment.*
