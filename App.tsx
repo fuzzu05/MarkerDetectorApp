@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator, NativeModules, Image } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, NativeModules, Image, ScrollView } from 'react-native';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 
 const { MarkerDetector } = NativeModules;
@@ -13,8 +13,7 @@ export default function App() {
   const [frameCount, setFrameCount] = useState(0);
   
   // Phase 2 Tracker State
-  const [markersFound, setMarkersFound] = useState(0);
-  const [latestMarkerImage, setLatestMarkerImage] = useState<string | null>(null);
+  const [capturedMarkers, setCapturedMarkers] = useState<string[]>([]);
   const [lastExtractionTime, setLastExtractionTime] = useState(0);
 
   useEffect(() => {
@@ -26,7 +25,7 @@ export default function App() {
   // The Capture Loop
   useEffect(() => {
     // Only start the loop if we have permission, device is ready, and we haven't hit 20 markers
-    if (!hasPermission || device == null || markersFound >= 20) return;
+    if (!hasPermission || device == null || capturedMarkers.length >= 20) return;
 
     const intervalId = setInterval(async () => {
       // Prevent taking a new photo if we are still processing the previous one
@@ -55,14 +54,15 @@ export default function App() {
             
             // Validate the latency goal: must be < 3000ms!
             if (processEnd - start < 3000) {
-                setMarkersFound(prev => Math.min(prev + 1, 20));
-                setLatestMarkerImage(extractedImagePath);
+                setCapturedMarkers(prev => {
+                    if (prev.length >= 20) return prev;
+                    return [...prev, extractedImagePath];
+                });
                 setLastExtractionTime(processEnd - start);
             } else {
                 console.warn(`⚠️ Marker ignored! Processing took ${processEnd - start}ms (over 3000ms limit)`);
             }
         } catch (opencvError: any) {
-            // Temporarily logging this so we can debug why nothing is working!
             console.log(`OpenCV Debug: ${opencvError.message}`);
         }
 
@@ -74,7 +74,7 @@ export default function App() {
     }, 1000); // Capture every 1000ms
 
     return () => clearInterval(intervalId);
-  }, [hasPermission, device, isProcessing, markersFound]);
+  }, [hasPermission, device, isProcessing, capturedMarkers.length]);
 
   if (!hasPermission) {
     return (
@@ -95,7 +95,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {markersFound < 20 ? (
+      {capturedMarkers.length < 20 ? (
         <Camera
           ref={camera}
           style={StyleSheet.absoluteFill}
@@ -104,32 +104,40 @@ export default function App() {
           photo={true}
         />
       ) : (
-        <View style={styles.centered}>
+        <View style={styles.successScreen}>
             <Text style={styles.successText}>🎉 Goal Reached!</Text>
             <Text style={styles.text}>Successfully extracted 20 markers</Text>
+            <ScrollView contentContainerStyle={styles.gridContainer}>
+                {capturedMarkers.map((uri, index) => (
+                    <View key={index} style={styles.gridItem}>
+                        <Image source={{ uri }} style={styles.gridImage} />
+                        <Text style={styles.subText}>#{index + 1}</Text>
+                    </View>
+                ))}
+            </ScrollView>
         </View>
       )}
 
       {/* Dev UI to see performance & progress */}
-      <View style={styles.overlay}>
-        <Text style={styles.statusText}>
-            {markersFound >= 20 ? 'Goal Completed!' : 'Phase 2: OpenCV Active'}
-        </Text>
-        <Text style={styles.goalText}>
-            Markers Found: {markersFound} / 20
-        </Text>
-        
-        {latestMarkerImage && (
-            <View style={styles.imageContainer}>
-                <Image source={{ uri: latestMarkerImage }} style={styles.previewImage} />
-                <Text style={styles.subText}>Extracted in: {lastExtractionTime}ms</Text>
-            </View>
-        )}
+      {capturedMarkers.length < 20 && (
+          <View style={styles.overlay}>
+            <Text style={styles.statusText}>Phase 2: OpenCV Active</Text>
+            <Text style={styles.goalText}>
+                Markers Found: {capturedMarkers.length} / 20
+            </Text>
+            
+            {capturedMarkers.length > 0 && (
+                <View style={styles.imageContainer}>
+                    <Image source={{ uri: capturedMarkers[capturedMarkers.length - 1] }} style={styles.previewImage} />
+                    <Text style={styles.subText}>Extracted in: {lastExtractionTime}ms</Text>
+                </View>
+            )}
 
-        <Text style={styles.subText}>
-          {frameCount > 0 ? `Captured ${frameCount} raw frames` : 'Waiting for frame...'}
-        </Text>
-      </View>
+            <Text style={styles.subText}>
+              {frameCount > 0 ? `Captured ${frameCount} raw frames` : 'Waiting for frame...'}
+            </Text>
+          </View>
+      )}
     </View>
   );
 }
@@ -145,10 +153,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#000',
   },
+  successScreen: {
+    flex: 1,
+    backgroundColor: '#111',
+    paddingTop: 60,
+    alignItems: 'center',
+  },
   text: {
     color: '#fff',
-    marginTop: 20,
+    marginTop: 10,
     fontSize: 16,
+    marginBottom: 20,
   },
   overlay: {
     position: 'absolute',
@@ -194,5 +209,22 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 5,
     marginBottom: 5,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    paddingBottom: 40,
+  },
+  gridItem: {
+    margin: 10,
+    alignItems: 'center',
+  },
+  gridImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#444',
   }
 });

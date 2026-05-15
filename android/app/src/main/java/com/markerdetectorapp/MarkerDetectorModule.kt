@@ -137,9 +137,9 @@ class MarkerDetectorModule(reactContext: ReactApplicationContext) : ReactContext
         val gray = Mat()
         Imgproc.cvtColor(warped, gray, Imgproc.COLOR_BGR2GRAY)
         
-        // Threshold to find solid black pixels
+        // Use Otsu's Threshold to automatically adapt to the Virtual Scene's lighting!
         val binary = Mat()
-        Imgproc.threshold(gray, binary, 80.0, 255.0, Imgproc.THRESH_BINARY_INV)
+        Imgproc.threshold(gray, binary, 0.0, 255.0, Imgproc.THRESH_BINARY_INV or Imgproc.THRESH_OTSU)
 
         val contours = ArrayList<MatOfPoint>()
         val hierarchy = Mat()
@@ -154,9 +154,15 @@ class MarkerDetectorModule(reactContext: ReactApplicationContext) : ReactContext
         for (contour in contours) {
             val rect = Imgproc.boundingRect(contour)
             val aspect = rect.width.toDouble() / rect.height
+            val contourArea = Imgproc.contourArea(contour)
+            val rectArea = rect.width.toDouble() * rect.height.toDouble()
+            val extent = contourArea / rectArea
             
-            // Check if shape is roughly square and matches expected 20x20 relative size
-            if (aspect in 0.6..1.4 && rect.width > expectedDim * 0.4 && rect.width < expectedDim * 1.8) {
+            // STRICT FILTER:
+            // 1. Aspect ratio must be very close to 1.0 (0.8 to 1.2)
+            // 2. Width must be very close to the expected 14% (0.7x to 1.3x)
+            // 3. Extent must be > 0.75 (meaning it is a solid block, not a weird stripe or hoof)
+            if (aspect in 0.8..1.2 && rect.width > expectedDim * 0.7 && rect.width < expectedDim * 1.3 && extent > 0.75) {
                 
                 val cx = rect.x + rect.width / 2.0
                 val cy = rect.y + rect.height / 2.0
