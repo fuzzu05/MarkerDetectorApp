@@ -71,7 +71,7 @@ export default function App() {
       } finally {
         setIsProcessing(false);
       }
-    }, 1000); // Capture every 1000ms
+    }, 200); // Check every 200ms (will skip if isProcessing is true)
 
     return () => clearInterval(intervalId);
   }, [hasPermission, device, isProcessing, capturedMarkers.length]);
@@ -211,20 +211,19 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
     paddingBottom: 40,
+    alignItems: 'center',
+    width: '100%',
   },
   gridItem: {
-    margin: 10,
+    marginVertical: 15,
     alignItems: 'center',
   },
   gridImage: {
-    width: 80,
-    height: 80,
+    width: 300,
+    height: 300,
     borderRadius: 5,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#444',
   }
 });

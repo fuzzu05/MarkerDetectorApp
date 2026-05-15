@@ -59,11 +59,13 @@ class MarkerDetectorModule(reactContext: ReactApplicationContext) : ReactContext
                 val contour2f = MatOfPoint2f(*contour.toArray())
                 val peri = Imgproc.arcLength(contour2f, true)
                 val approx = MatOfPoint2f()
-                Imgproc.approxPolyDP(contour2f, approx, 0.02 * peri, true)
+                // Use 0.04 instead of 0.02! This forces slightly noisy/blurry lines to be approximated as a strict 4-point square, reducing dropped frames!
+                Imgproc.approxPolyDP(contour2f, approx, 0.04 * peri, true)
 
                 if (approx.total() == 4L) {
                     val area = Imgproc.contourArea(approx)
-                    if (area > maxArea && area > 10000) { // Filter out tiny background squares
+                    // Lowered area threshold to 2000 to catch markers even if the camera uses a lower-res fast-capture mode
+                    if (area > maxArea && area > 2000) {
                         maxArea = area
                         markerContour = approx
                     }
@@ -75,8 +77,8 @@ class MarkerDetectorModule(reactContext: ReactApplicationContext) : ReactContext
                 return
             }
 
-            // 5. Perspective Warp to a 400x400 flat square
-            val warpSize = 400.0
+            // 5. Perspective Warp to a 300x300 flat square (Assignment Requirement)
+            val warpSize = 300.0
             val srcPoints = sortCorners(markerContour)
             val dstPoints = MatOfPoint2f(
                 Point(0.0, 0.0),
@@ -158,11 +160,11 @@ class MarkerDetectorModule(reactContext: ReactApplicationContext) : ReactContext
             val rectArea = rect.width.toDouble() * rect.height.toDouble()
             val extent = contourArea / rectArea
             
-            // STRICT FILTER:
-            // 1. Aspect ratio must be very close to 1.0 (0.8 to 1.2)
-            // 2. Width must be very close to the expected 14% (0.7x to 1.3x)
-            // 3. Extent must be > 0.75 (meaning it is a solid block, not a weird stripe or hoof)
-            if (aspect in 0.8..1.2 && rect.width > expectedDim * 0.7 && rect.width < expectedDim * 1.3 && extent > 0.75) {
+            // SUPER RELAXED FILTER:
+            // 1. Aspect ratio: 0.6 to 1.4
+            // 2. Width: 0.5x to 1.5x of expected
+            // 3. Extent: > 0.50
+            if (aspect in 0.6..1.4 && rect.width > expectedDim * 0.5 && rect.width < expectedDim * 1.5 && extent > 0.50) {
                 
                 val cx = rect.x + rect.width / 2.0
                 val cy = rect.y + rect.height / 2.0
