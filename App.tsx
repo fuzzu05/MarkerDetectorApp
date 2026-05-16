@@ -93,6 +93,12 @@ export default function App() {
     );
   }
 
+  const resetScanner = () => {
+    setCapturedMarkers([]);
+    setFrameCount(0);
+    setLastExtractionTime(0);
+  };
+
   return (
     <View style={styles.container}>
       {capturedMarkers.length < 20 ? (
@@ -105,13 +111,18 @@ export default function App() {
         />
       ) : (
         <View style={styles.successScreen}>
-            <Text style={styles.successText}>🎉 Goal Reached!</Text>
-            <Text style={styles.text}>Successfully extracted 20 markers</Text>
+            <View style={styles.header}>
+                <Text style={styles.successText}>🎉 Goal Reached!</Text>
+                <Text style={styles.text}>Successfully extracted 20 markers</Text>
+                <Text style={styles.resetButton} onPress={resetScanner}>
+                    🔄 Scan Again
+                </Text>
+            </View>
             <ScrollView contentContainerStyle={styles.gridContainer}>
                 {capturedMarkers.map((uri, index) => (
                     <View key={index} style={styles.gridItem}>
                         <Image source={{ uri }} style={styles.gridImage} />
-                        <Text style={styles.subText}>#{index + 1}</Text>
+                        <Text style={styles.subText}>Processed Marker #{index + 1}</Text>
                     </View>
                 ))}
             </ScrollView>
@@ -158,6 +169,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#111',
     paddingTop: 60,
     alignItems: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 15,
+    width: '100%',
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  resetButton: {
+    backgroundColor: '#333',
+    color: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 10,
+    fontWeight: 'bold',
+    overflow: 'hidden',
   },
   text: {
     color: '#fff',

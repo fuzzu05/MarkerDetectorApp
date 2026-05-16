@@ -30,10 +30,27 @@ class MarkerDetectorModule(reactContext: ReactApplicationContext) : ReactContext
     fun processMarker(imagePath: String, promise: Promise) {
         try {
             val cleanPath = imagePath.replace("file://", "")
-            val src = Imgcodecs.imread(cleanPath)
+            var src = Imgcodecs.imread(cleanPath)
             if (src.empty()) {
                 promise.reject("ERR_IMAGE", "Could not load image: $cleanPath")
                 return
+            }
+
+            // Constraint #5: Live camera feed should be minimum 2000x2000px and maximum 3000x3000px
+            val width = src.cols().toDouble()
+            val height = src.rows().toDouble()
+            var scale = 1.0
+
+            if (width < 2000 || height < 2000) {
+                scale = maxOf(2000.0 / width, 2000.0 / height)
+            } else if (width > 3000 || height > 3000) {
+                scale = minOf(3000.0 / width, 3000.0 / height)
+            }
+
+            if (scale != 1.0) {
+                val resized = Mat()
+                Imgproc.resize(src, resized, Size(width * scale, height * scale))
+                src = resized
             }
 
             // 1. Grayscale & Blur
