@@ -162,13 +162,17 @@ class MarkerDetectorModule(reactContext: ReactApplicationContext) : ReactContext
 
         val contours = ArrayList<MatOfPoint>()
         val hierarchy = Mat()
-        Imgproc.findContours(binary, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
+        // Use RETR_LIST! If RETR_EXTERNAL is used and the black border is captured, it hides the square!
+        Imgproc.findContours(binary, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE)
 
         val width = warped.cols().toDouble()
         val height = warped.rows().toDouble()
         
         // A 20x20 square in a 140x140 marker is roughly 14% of the width
         val expectedDim = width * (20.0 / 140.0) 
+
+        var validSquareCount = 0
+        var foundCorner = -1
 
         for (contour in contours) {
             val rect = Imgproc.boundingRect(contour)
@@ -177,27 +181,34 @@ class MarkerDetectorModule(reactContext: ReactApplicationContext) : ReactContext
             val rectArea = rect.width.toDouble() * rect.height.toDouble()
             val extent = contourArea / rectArea
             
-            // SUPER RELAXED FILTER:
-            // 1. Aspect ratio: 0.6 to 1.4
-            // 2. Width: 0.5x to 1.5x of expected
-            // 3. Extent: > 0.50
-            if (aspect in 0.6..1.4 && rect.width > expectedDim * 0.5 && rect.width < expectedDim * 1.5 && extent > 0.50) {
+            // STRICT FILTER:
+            // 1. Aspect ratio: 0.75 to 1.25 (must be a square, relaxed for aliasing)
+            // 2. Width: 0.7x to 1.3x of expected (strictly ~14%, relaxed for blur)
+            // 3. Extent: > 0.75 (must be a solid filled shape, relaxed for rounded corners)
+            if (aspect in 0.75..1.25 && rect.width > expectedDim * 0.7 && rect.width < expectedDim * 1.3 && extent > 0.75) {
                 
                 val cx = rect.x + rect.width / 2.0
                 val cy = rect.y + rect.height / 2.0
                 
-                // If it is located in the middle 40% of the image, it's invalid!
+                // If it is located in the middle 40% of the image, skip it
                 if (cx > width * 0.3 && cx < width * 0.7 && cy > height * 0.3 && cy < height * 0.7) {
-                    return -1 
+                    continue
                 }
 
+                validSquareCount++
+
                 // Identify corner
-                if (cx < width / 2 && cy < height / 2) return 0 // TL
-                if (cx >= width / 2 && cy < height / 2) return 1 // TR
-                if (cx >= width / 2 && cy >= height / 2) return 2 // BR
-                if (cx < width / 2 && cy >= height / 2) return 3 // BL
+                if (cx < width / 2 && cy < height / 2) foundCorner = 0 // TL
+                else if (cx >= width / 2 && cy < height / 2) foundCorner = 1 // TR
+                else if (cx >= width / 2 && cy >= height / 2) foundCorner = 2 // BR
+                else if (cx < width / 2 && cy >= height / 2) foundCorner = 3 // BL
             }
         }
-        return -1 // No valid square found
+        
+        // It is only a valid marker if there is EXACTLY ONE orientation square!
+        if (validSquareCount == 1) {
+            return foundCorner
+        }
+        return -1 // Rejected: either 0 squares, or a checkerboard with multiple squares
     }
 }

@@ -7,6 +7,20 @@ The application successfully fulfills all constraints of the internship assignme
 
 ---
 
+## Live Demo & Proof of Success
+
+To prove the robustness of the application, below are screenshots of the app in action:
+
+### 1. Live Camera Rotation Correction
+Notice that even when the camera scans an upside-down marker (where the orientation square is in the bottom-right), the algorithm perfectly rotates the matrix so the square is in the **Top-Left** corner, processing the entire frame in just ~450ms.
+![Live Camera Scanning](./camera.png)
+
+### 2. Final 20-Marker Output Grid
+Upon capturing 20 valid frames, all markers are displayed flawlessly cropped to 300x300px with zero background padding.
+![Success Output Grid](./success.png)
+
+---
+
 ## Architecture & Technology Stack
 To achieve maximum performance and avoid the bottleneck of the JavaScript bridge during heavy image manipulation, the application employs a hybrid architecture:
 
