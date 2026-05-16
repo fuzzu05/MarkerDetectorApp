@@ -19,9 +19,3 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
-
-allprojects {
-    // This is the "Short Path Hack" for Windows. 
-    // It moves the build folders to a tiny path (D:\b) to bypass the 260 character limit.
-    buildDir = "D:/b/${project.name}"
-}
