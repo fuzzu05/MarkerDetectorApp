@@ -71,8 +71,8 @@ export default function App() {
       } finally {
         setIsProcessing(false);
       }
-    }, 200); // Check every 200ms (will skip if isProcessing is true)
-
+    }, 50); // Check every 50ms for maximum snappiness!
+    
     return () => clearInterval(intervalId);
   }, [hasPermission, device, isProcessing, capturedMarkers.length]);
 
