@@ -11,7 +11,7 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastFrameTime, setLastFrameTime] = useState(0);
   const [frameCount, setFrameCount] = useState(0);
-  
+
   // Phase 2 Tracker State
   const [capturedMarkers, setCapturedMarkers] = useState<string[]>([]);
   const [lastExtractionTime, setLastExtractionTime] = useState(0);
@@ -47,23 +47,23 @@ export default function App() {
 
         // 2. Pass photo.path to OpenCV Native Module
         try {
-            const extractedImagePath = await MarkerDetector.processMarker(photo.path);
-            const processEnd = Date.now();
-            
-            console.log(`✅ Marker Extracted in ${processEnd - captureEnd}ms: ${extractedImagePath}`);
-            
-            // Validate the latency goal: must be < 3000ms!
-            if (processEnd - start < 3000) {
-                setCapturedMarkers(prev => {
-                    if (prev.length >= 20) return prev;
-                    return [...prev, extractedImagePath];
-                });
-                setLastExtractionTime(processEnd - start);
-            } else {
-                console.warn(`⚠️ Marker ignored! Processing took ${processEnd - start}ms (over 3000ms limit)`);
-            }
+          const extractedImagePath = await MarkerDetector.processMarker(photo.path);
+          const processEnd = Date.now();
+
+          console.log(`✅ Marker Extracted in ${processEnd - captureEnd}ms: ${extractedImagePath}`);
+
+          // Validate the latency goal: must be < 3000ms!
+          if (processEnd - start < 3000) {
+            setCapturedMarkers(prev => {
+              if (prev.length >= 20) return prev;
+              return [...prev, extractedImagePath];
+            });
+            setLastExtractionTime(processEnd - start);
+          } else {
+            console.warn(`⚠️ Marker ignored! Processing took ${processEnd - start}ms (over 3000ms limit)`);
+          }
         } catch (opencvError: any) {
-            console.log(`OpenCV Debug: ${opencvError.message}`);
+          console.log(`OpenCV Debug: ${opencvError.message}`);
         }
 
       } catch (error) {
@@ -111,43 +111,43 @@ export default function App() {
         />
       ) : (
         <View style={styles.successScreen}>
-            <View style={styles.header}>
-                <Text style={styles.successText}>🎉 Goal Reached!</Text>
-                <Text style={styles.text}>Successfully extracted 20 markers</Text>
-                <Text style={styles.resetButton} onPress={resetScanner}>
-                    🔄 Scan Again
-                </Text>
-            </View>
-            <ScrollView contentContainerStyle={styles.gridContainer}>
-                {capturedMarkers.map((uri, index) => (
-                    <View key={index} style={styles.gridItem}>
-                        <Image source={{ uri }} style={styles.gridImage} />
-                        <Text style={styles.subText}>Processed Marker #{index + 1}</Text>
-                    </View>
-                ))}
-            </ScrollView>
+          <View style={styles.header}>
+            <Text style={styles.successText}>🎉 Goal Reached!</Text>
+            <Text style={styles.text}>Successfully extracted 20 markers</Text>
+            <Text style={styles.resetButton} onPress={resetScanner}>
+              🔄 Scan Again
+            </Text>
+          </View>
+          <ScrollView contentContainerStyle={styles.gridContainer}>
+            {capturedMarkers.map((uri, index) => (
+              <View key={index} style={styles.gridItem}>
+                <Image source={{ uri }} style={styles.gridImage} />
+                <Text style={styles.subText}>Processed Marker #{index + 1}</Text>
+              </View>
+            ))}
+          </ScrollView>
         </View>
       )}
 
       {/* Dev UI to see performance & progress */}
       {capturedMarkers.length < 20 && (
-          <View style={styles.overlay}>
-            <Text style={styles.statusText}>Phase 2: OpenCV Active</Text>
-            <Text style={styles.goalText}>
-                Markers Found: {capturedMarkers.length} / 20
-            </Text>
-            
-            {capturedMarkers.length > 0 && (
-                <View style={styles.imageContainer}>
-                    <Image source={{ uri: capturedMarkers[capturedMarkers.length - 1] }} style={styles.previewImage} />
-                    <Text style={styles.subText}>Extracted in: {lastExtractionTime}ms</Text>
-                </View>
-            )}
+        <View style={styles.overlay}>
+          <Text style={styles.statusText}>Phase 2: OpenCV Active</Text>
+          <Text style={styles.goalText}>
+            Markers Found: {capturedMarkers.length} / 20
+          </Text>
 
-            <Text style={styles.subText}>
-              {frameCount > 0 ? `Captured ${frameCount} raw frames` : 'Waiting for frame...'}
-            </Text>
-          </View>
+          {capturedMarkers.length > 0 && (
+            <View style={styles.imageContainer}>
+              <Image source={{ uri: capturedMarkers[capturedMarkers.length - 1] }} style={styles.previewImage} />
+              <Text style={styles.subText}>Extracted in: {lastExtractionTime}ms</Text>
+            </View>
+          )}
+
+          <Text style={styles.subText}>
+            {frameCount > 0 ? `Captured ${frameCount} raw frames` : 'Waiting for frame...'}
+          </Text>
+        </View>
       )}
     </View>
   );
